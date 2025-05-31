@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:newspub/screen/login_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -71,7 +72,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _navigateToHome() {
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
     );
   }
 

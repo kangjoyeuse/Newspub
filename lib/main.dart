@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:newspub/screen/onboarding_screen.dart';
 import 'package:newspub/screen/splash_screen.dart';
 
 void main() {
@@ -7,7 +6,7 @@ void main() {
 }
 
 class MyWidget extends StatelessWidget {
-  MyWidget({super.key});
+  const MyWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
