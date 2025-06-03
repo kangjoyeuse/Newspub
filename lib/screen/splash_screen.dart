@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:newspub/screen/onboarding_screen.dart';
 import 'package:simple_circular_progress_bar/simple_circular_progress_bar.dart';
 import 'dart:async'; // Add this import
 
@@ -34,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen> {
       // Replace 'NextScreen()' with your target screen
       Navigator.of(
         context,
-      ).pushReplacement(MaterialPageRoute(builder: (context) => LoginScreen()));
+      ).pushReplacement(MaterialPageRoute(builder: (context) => OnboardingScreen()));
     });
   }
 
