@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:newspub/screen/home_screen.dart';
 import 'package:newspub/screen/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -141,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => LoginScreen(),
+                              builder: (context) => NewsHomeScreen(),
                             ),
                           );
                         }
