@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:newspub/screen/home_screen.dart';
-import 'package:newspub/screen/login_screen.dart';
 
 void main() {
   runApp(const MyApp());

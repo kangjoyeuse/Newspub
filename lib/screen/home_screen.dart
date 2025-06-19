@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:newspub/screen/bookmark_screen.dart';
 import 'package:newspub/screen/login_screen.dart';
 
 import '../apiservice.dart';
@@ -40,20 +41,6 @@ class NewsHomeScreen extends StatefulWidget {
 class _NewsHomeScreenState extends State<NewsHomeScreen> {
   int _selectedIndex = 0;
   Map<String, dynamic>? userData;
-
-  void _onItemTapped(int index) {
-    setState(() {
-      // If user isn't logged in and tries to access profile tab (which shouldn't happen),
-      // reset to home tab
-      if (userData == null && index > 0) {
-        _selectedIndex = 0;
-        // Show login prompt
-        showLoginPrompt();
-      } else {
-        _selectedIndex = index;
-      }
-    });
-  }
 
   void showLoginPrompt() {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -171,20 +158,35 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
+        items: [
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.bookmark_border),
+            label: 'Bookmark',
           ),
+          // Hanya tampilkan item Profile jika user sudah login
+          if (userData != null)
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              label: 'Profile',
+            ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue[600],
         unselectedItemColor: Colors.grey[500],
         onTap: (index) {
-          if (index == 1 && userData == null) {
-            // If trying to access Profile without being logged in
-            showLoginPrompt();
+          if (index == 1) {
+            // Navigate to bookmark screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const BookmarkScreen()),
+            );
+          } else if (index == 2 && userData != null) {
+            // Handle profile navigation ketika user sudah login
+            setState(() {
+              _selectedIndex = index;
+            });
+            // TODO: Navigate to profile screen
           } else {
             setState(() {
               _selectedIndex = index;
