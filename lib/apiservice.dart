@@ -16,3 +16,32 @@ Future<List<NewsArticle>> fetchNewsArticles() async {
     throw Exception('Failed to load news');
   }
 }
+
+Future<Map<String, dynamic>> loginUser(String email, String password) async {
+  final response = await http.post(
+    Uri.parse('http://45.149.187.204:3000/api/auth/login'),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({
+      'email': email,
+      'password': password,
+    }),
+  );
+
+  final jsonBody = json.decode(response.body);
+
+  if (response.statusCode == 200 && jsonBody['body']['success'] == true) {
+    return {
+      'success': true,
+      'token': jsonBody['body']['data']['token'],
+      'author': jsonBody['body']['data']['author'],
+      'message': jsonBody['body']['message'],
+    };
+  } else {
+    return {
+      'success': false,
+      'message': jsonBody['body']['message'] ?? 'Login failed',
+    };
+  }
+}
