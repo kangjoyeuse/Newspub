@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:newspub/screen/bookmark_screen.dart';
 import 'package:newspub/screen/login_screen.dart';
+import 'package:newspub/screen/profile_screen.dart'; // Add this import
 
 import '../apiservice.dart';
 import '../newsmodel.dart';
@@ -179,14 +180,26 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
             // Navigate to bookmark screen
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const BookmarkScreen()),
+              MaterialPageRoute(
+                builder: (context) => BookmarkScreen(userData: userData),
+              ),
             );
           } else if (index == 2 && userData != null) {
-            // Handle profile navigation ketika user sudah login
-            setState(() {
-              _selectedIndex = index;
+            // Navigate to profile screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProfileScreen(userData: userData!),
+              ),
+            ).then((result) {
+              // Handle logout if returned from profile screen
+              if (result != null && result['logout'] == true) {
+                setState(() {
+                  userData = null;
+                  _selectedIndex = 0;
+                });
+              }
             });
-            // TODO: Navigate to profile screen
           } else {
             setState(() {
               _selectedIndex = index;
