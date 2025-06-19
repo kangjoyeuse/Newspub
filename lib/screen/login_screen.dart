@@ -1,7 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:newspub/screen/home_screen.dart';
 import 'package:newspub/screen/register_screen.dart';
 
 import '../apiservice.dart';
@@ -147,21 +146,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
 
                             if (result['success']) {
-                              // You might want to store the token in secure storage
-                              // For this example, we'll just show a success message
+                              // Show success message
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    result['message'] ?? 'Login berhasil!',
-                                  ),
-                                ),
+                                SnackBar(content: Text(result['message'] ?? 'Login berhasil!')),
                               );
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => NewsHomeScreen(),
-                                ),
-                              );
+
+                              // Return to home screen with user data
+                              Navigator.pop(context, {
+                                'token': result['token'],
+                                'author': result['author'],
+                              });
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(

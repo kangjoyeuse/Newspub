@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:newspub/screen/login_screen.dart';
 
 import '../apiservice.dart';
 import '../newsmodel.dart';
@@ -38,11 +39,43 @@ class NewsHomeScreen extends StatefulWidget {
 
 class _NewsHomeScreenState extends State<NewsHomeScreen> {
   int _selectedIndex = 0;
+  Map<String, dynamic>? userData;
 
   void _onItemTapped(int index) {
     setState(() {
-      _selectedIndex = index;
+      // If user isn't logged in and tries to access profile tab (which shouldn't happen),
+      // reset to home tab
+      if (userData == null && index > 0) {
+        _selectedIndex = 0;
+        // Show login prompt
+        showLoginPrompt();
+      } else {
+        _selectedIndex = index;
+      }
     });
+  }
+
+  void showLoginPrompt() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Please login to access your profile'),
+        action: SnackBarAction(
+          label: 'Login',
+          onPressed: () async {
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LoginScreen()),
+            );
+
+            if (result != null && result is Map<String, dynamic>) {
+              setState(() {
+                userData = result;
+              });
+            }
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -67,12 +100,63 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.person, size: 28, color: Color(0xFF475569)), // text-slate-600
-            onPressed: () {
-              // Aksi untuk profil pengguna
-            },
-          ),
+          userData == null
+              ? TextButton.icon(
+                icon: const Icon(Icons.login, color: Color(0xFF3B82F6)),
+                label: const Text(
+                  'Login',
+                  style: TextStyle(
+                    color: Color(0xFF3B82F6),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                  );
+
+                  // Check if result contains user data from login screen
+                  if (result != null && result is Map<String, dynamic>) {
+                    setState(() {
+                      userData = result;
+                    });
+                  }
+                },
+              )
+              : Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundImage:
+                          userData!['author']['avatarUrl'] != null
+                              ? NetworkImage(userData!['author']['avatarUrl'])
+                              : null,
+                      backgroundColor: Colors.blue,
+                      child:
+                          userData!['author']['avatarUrl'] == null
+                              ? Text(
+                                userData!['author']['firstName'][0],
+                                style: const TextStyle(color: Colors.white),
+                              )
+                              : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${userData!['author']['firstName']} ${userData!['author']['lastName']}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
         ],
       ),
       body: SingleChildScrollView(
@@ -82,20 +166,13 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
             _buildFeaturedSection(),
             _buildLatestNewsSection(),
             // Padding untuk menghindari tumpang tindih dengan BottomNavigationBar
-            const SizedBox(height: 80), 
+            const SizedBox(height: 80),
           ],
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark_border),
-            label: 'Bookmark',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             label: 'Profile',
@@ -104,8 +181,17 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue[600],
         unselectedItemColor: Colors.grey[500],
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed, // Memastikan semua label terlihat
+        onTap: (index) {
+          if (index == 1 && userData == null) {
+            // If trying to access Profile without being logged in
+            showLoginPrompt();
+          } else {
+            setState(() {
+              _selectedIndex = index;
+            });
+          }
+        },
+        type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         elevation: 5.0,
       ),
@@ -117,26 +203,32 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
     // Data dummy untuk artikel
     final featuredArticles = [
       {
-        "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuC6t_1F-8In5p9aoUyLLUYUTFGz4BoAwEPEfNsFB5s0vcpZ7ZUKDIV3wGHOQh2dLKCHpPAm-_enC1UXJMGjYjmMAWDQGe_QPhxevYfwyVzSyS_NUclrGTdCWW0SUPhQMryRu8tI2IdR2dURuk1iucqscbXn4kfgA9LUAzTVPAoGJuekEgCRT-Cesapni2wND6ynnJOeptB6PXgIXZue5_TZSeeRY41s13CD3rT71r6SRh0b6qaxLBgV_CKKJEWETn8FUcPOeyDv2KY",
+        "image":
+            "https://lh3.googleusercontent.com/aida-public/AB6AXuC6t_1F-8In5p9aoUyLLUYUTFGz4BoAwEPEfNsFB5s0vcpZ7ZUKDIV3wGHOQh2dLKCHpPAm-_enC1UXJMGjYjmMAWDQGe_QPhxevYfwyVzSyS_NUclrGTdCWW0SUPhQMryRu8tI2IdR2dURuk1iucqscbXn4kfgA9LUAzTVPAoGJuekEgCRT-Cesapni2wND6ynnJOeptB6PXgIXZue5_TZSeeRY41s13CD3rT71r6SRh0b6qaxLBgV_CKKJEWETn8FUcPOeyDv2KY",
         "category": "Technology",
         "title": "Tech Giants Unveil New Innovations",
-        "description": "Latest advancements in technology from leading companies...",
-        "color": Colors.blue[500]
+        "description":
+            "Latest advancements in technology from leading companies...",
+        "color": Colors.blue[500],
       },
       {
-        "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuB7PIgKnSWh2AFQBBAm44oQQSok3nTjTvw3IUb361lpRVVtpceMJz5nNRzxbvyaHRUHWgWHz5AIw4g_QjipBX0_R0qwFet0AJDOPpvJfAID-G5gB_Jk49fvovSaUZg9euCmrBr63yUSnlveofxZXiseSeBaV7G7Lm6524VOOkIMfq1YP_7Dld5X_gKXpHecBX3F7_Axtr3LoAiQ_ggd-qT2rFqGKAiwEKnxDTxM34-rBioihln4Sv8ozXjyr24edAKklmTLTVVVyAg",
+        "image":
+            "https://lh3.googleusercontent.com/aida-public/AB6AXuB7PIgKnSWh2AFQBBAm44oQQSok3nTjTvw3IUb361lpRVVtpceMJz5nNRzxbvyaHRUHWgWHz5AIw4g_QjipBX0_R0qwFet0AJDOPpvJfAID-G5gB_Jk49fvovSaUZg9euCmrBr63yUSnlveofxZXiseSeBaV7G7Lm6524VOOkIMfq1YP_7Dld5X_gKXpHecBX3F7_Axtr3LoAiQ_ggd-qT2rFqGKAiwEKnxDTxM34-rBioihln4Sv8ozXjyr24edAKklmTLTVVVyAg",
         "category": "Environment",
         "title": "Climate Change Summit Concludes",
-        "description": "Key decisions and commitments from the global summit...",
-        "color": Colors.green[500]
+        "description":
+            "Key decisions and commitments from the global summit...",
+        "color": Colors.green[500],
       },
       {
-        "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuD6BU1pzdCV4TBtHssZopScNmm2eNdFGLbi9Te46QauMtAQGXuaaK8XhiV4nXIfu1WAa2jJTOSIphae-xk1DdlU-SmTA0WXoV9UH6SF3gDNx0LTiOrgRih2ZTaDThfro5wX4sJkRFEWwvZZuQiH9KcsN8FWo2okwv8fF_Qn3GVVKFkiQSFholpt3NIxN7qXWazdTlRczytP66qZisKFFs9_5lxJsGC-teVfCYUzP6WGaG2ldF1rRsyOxax9PKuLqBRYxXolJe63k0E",
+        "image":
+            "https://lh3.googleusercontent.com/aida-public/AB6AXuD6BU1pzdCV4TBtHssZopScNmm2eNdFGLbi9Te46QauMtAQGXuaaK8XhiV4nXIfu1WAa2jJTOSIphae-xk1DdlU-SmTA0WXoV9UH6SF3gDNx0LTiOrgRih2ZTaDThfro5wX4sJkRFEWwvZZuQiH9KcsN8FWo2okwv8fF_Qn3GVVKFkiQSFholpt3NIxN7qXWazdTlRczytP66qZisKFFs9_5lxJsGC-teVfCYUzP6WGaG2ldF1rRsyOxax9PKuLqBRYxXolJe63k0E",
         "category": "Travel",
         "title": "Summer Travel Destinations",
-        "description": "Top spots for your next vacation, offering unique experiences...",
-        "color": Colors.red[500]
-      }
+        "description":
+            "Top spots for your next vacation, offering unique experiences...",
+        "color": Colors.red[500],
+      },
     ];
 
     return Container(
@@ -171,7 +263,6 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
 
   // Widget untuk section berita terbaru
   Widget _buildLatestNewsSection() {
-
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -201,12 +292,14 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
                 itemCount: latestNews.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                separatorBuilder:
+                    (context, index) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final news = latestNews[index];
                   return LatestNewsCard(
                     imageUrl: news.featuredImageUrl,
-                    category: news.category, // Or use news.category if available
+                    category: news.category,
+                    // Or use news.category if available
                     title: news.title,
                     description: news.summary,
                     categoryColor: Colors.blue[600]!, // Adjust as needed
@@ -266,15 +359,19 @@ class FeaturedArticleCard extends StatelessWidget {
               height: 220,
               fit: BoxFit.cover,
               // Error handling untuk gambar
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.image_not_supported, size: 48),
+              errorBuilder:
+                  (context, error, stackTrace) =>
+                      const Icon(Icons.image_not_supported, size: 48),
             ),
             // Gradient overlay
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
+                    colors: [
+                      Colors.black.withValues(alpha: 0.8),
+                      Colors.transparent,
+                    ],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                   ),
@@ -292,7 +389,10 @@ class FeaturedArticleCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: categoryColor,
                         borderRadius: BorderRadius.circular(12),
@@ -319,10 +419,7 @@ class FeaturedArticleCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       description,
-                      style: TextStyle(
-                        color: Colors.grey[200],
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.grey[200], fontSize: 14),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -339,18 +436,18 @@ class FeaturedArticleCard extends StatelessWidget {
 
 // Widget kustom untuk kartu berita terbaru
 class LatestNewsCard extends StatelessWidget {
-    final String imageUrl;
-    final String category;
-    final String title;
-    final String description;
-    final Color categoryColor;
-    
+  final String imageUrl;
+  final String category;
+  final String title;
+  final String description;
+  final Color categoryColor;
+
   const LatestNewsCard({
-    super.key, 
-    required this.imageUrl, 
-    required this.category, 
-    required this.title, 
-    required this.description, 
+    super.key,
+    required this.imageUrl,
+    required this.category,
+    required this.title,
+    required this.description,
     required this.categoryColor,
   });
 
@@ -372,8 +469,9 @@ class LatestNewsCard extends StatelessWidget {
                 width: 96,
                 height: 96,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.image_not_supported, size: 48),
+                errorBuilder:
+                    (context, error, stackTrace) =>
+                        const Icon(Icons.image_not_supported, size: 48),
               ),
             ),
             const SizedBox(width: 16),
@@ -404,16 +502,13 @@ class LatestNewsCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: Colors.grey[500], fontSize: 14),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
