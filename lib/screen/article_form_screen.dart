@@ -194,7 +194,7 @@ class _ArticleFormScreenState extends State<ArticleFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title Field
+              // Title Field (with validation)
               _buildTextField(
                 controller: _titleController,
                 label: 'Title',
@@ -209,75 +209,59 @@ class _ArticleFormScreenState extends State<ArticleFormScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Summary Field
+              // Summary Field (no validation)
               _buildTextField(
                 controller: _summaryController,
                 label: 'Summary',
                 hint: 'Enter article summary',
                 maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Summary is required';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
 
-              // Content Field
+              // Content Field (with validation for minimum 10 characters)
               _buildTextField(
                 controller: _contentController,
                 label: 'Content',
-                hint: 'Enter article content',
+                hint: 'Enter article content (minimum 10 characters)',
                 maxLines: 8,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Content is required';
                   }
+                  
+                  // Count characters (excluding whitespace)
+                  final charCount = value.trim().replaceAll(RegExp(r'\s+'), '').length;
+                  
+                  if (charCount < 10) {
+                    return 'Content must contain at least 10 characters (currently $charCount characters)';
+                  }
+                  
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              // Featured Image URL Field
+              // Featured Image URL Field (no validation)
               _buildTextField(
                 controller: _imageUrlController,
                 label: 'Featured Image URL',
                 hint: 'Enter image URL',
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Featured image URL is required';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
 
-              // Category Field (Changed from dropdown to text field)
+              // Category Field (no validation)
               _buildTextField(
                 controller: _categoryController,
                 label: 'Category',
                 hint: 'Enter article category (e.g., Technology, Sports, Politics)',
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Category is required';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
 
-              // Tags Field
+              // Tags Field (no validation)
               _buildTextField(
                 controller: _tagsController,
                 label: 'Tags',
                 hint: 'Enter tags separated by commas',
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'At least one tag is required';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
 
@@ -357,7 +341,7 @@ class _ArticleFormScreenState extends State<ArticleFormScreen> {
     required String label,
     required String hint,
     int maxLines = 1,
-    String? Function(String?)? validator,
+    String? Function(String?)? validator, // Made optional
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,7 +358,7 @@ class _ArticleFormScreenState extends State<ArticleFormScreen> {
         TextFormField(
           controller: controller,
           maxLines: maxLines,
-          validator: validator,
+          validator: validator, // Can be null now
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.beVietnamPro(
