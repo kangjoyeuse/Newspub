@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../apiservice.dart';
+import '../newsmodel.dart';
+import 'article_form_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Map<String, dynamic> userData;
@@ -11,26 +14,42 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  List<ArticleItem> userArticles = [
-    ArticleItem(
-      id: "1",
-      imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuC6t_1F-8In5p9aoUyLLUYUTFGz4BoAwEPEfNsFB5s0vcpZ7ZUKDIV3wGHOQh2dLKCHpPAm-_enC1UXJMGjYjmMAWDQGe_QPhxevYfwyVzSyS_NUclrGTdCWW0SUPhQMryRu8tI2IdR2dURuk1iucqscbXn4kfgA9LUAzTVPAoGJuekEgCRT-Cesapni2wND6ynnJOeptB6PXgIXZue5_TZSeeRY41s13CD3rT71r6SRh0b6qaxLBgV_CKKJEWETn8FUcPOeyDv2KY",
-      title: "My Tech Innovation Article",
-      description: "A comprehensive look at the latest technological advancements and their impact on society.",
-      category: "Technology",
-      publishDate: "2024-06-15",
-      status: "Published",
-    ),
-    ArticleItem(
-      id: "2",
-      imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuB7PIgKnSWh2AFQBBAm44oQQSok3nTjTvw3IUb361lpRVVtpceMJz5nNRzxbvyaHRUHWgWHz5AIw4g_QjipBX0_R0qwFet0AJDOPpvJfAID-G5gB_Jk49fvovSaUZg9euCmrBr63yUSnlveofxZXiseSeBaV7G7Lm6524VOOkIMfq1YP_7Dld5X_gKXpHecBX3F7_Axtr3LoAiQ_ggd-qT2rFqGKAiwEKnxDTxM34-rBioihln4Sv8ozXjyr24edAKklmTLTVVVyAg",
-      title: "Environmental Sustainability Report",
-      description: "Exploring green initiatives and their effectiveness in combating climate change.",
-      category: "Environment",
-      publishDate: "2024-06-10",
-      status: "Draft",
-    ),
-  ];
+  List<NewsArticle> userArticles = [];
+  bool _isLoading = true;
+  bool _hasError = false;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadArticles();
+  }
+
+  Future<void> _loadArticles() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+      });
+
+      final articles = await fetchAuthorArticles(widget.userData['token']);
+      
+      if (mounted) {
+        setState(() {
+          userArticles = articles;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
 
   void _showLogoutDialog() {
     showDialog(
@@ -76,36 +95,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _deleteArticle(String articleId) {
-    setState(() {
-      userArticles.removeWhere((article) => article.id == articleId);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Article deleted successfully'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  Future<void> _deleteArticle(NewsArticle article) async {
+    try {
+      final result = await deleteArticle(
+        token: widget.userData['token'],
+        articleId: article.id,
+      );
+
+      if (result['success']) {
+        setState(() {
+          userArticles.removeWhere((a) => a.id == article.id);
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message']),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message']),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting article: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  void _createNewArticle() {
-    // TODO: Navigate to create article screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Create Article feature coming soon'),
-        duration: Duration(seconds: 2),
+  Future<void> _navigateToCreateArticle() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ArticleFormScreen(userData: widget.userData),
       ),
     );
+
+    if (result == true) {
+      _loadArticles(); // Refresh the list
+    }
   }
 
-  void _editArticle(ArticleItem article) {
-    // TODO: Navigate to edit article screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Edit "${article.title}" feature coming soon'),
-        duration: const Duration(seconds: 2),
+  Future<void> _navigateToEditArticle(NewsArticle article) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ArticleFormScreen(
+          userData: widget.userData,
+          article: article,
+        ),
       ),
     );
+
+    if (result == true) {
+      _loadArticles(); // Refresh the list
+    }
   }
 
   @override
@@ -219,7 +277,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 ElevatedButton.icon(
-                  onPressed: _createNewArticle,
+                  onPressed: _navigateToCreateArticle,
                   icon: const Icon(Icons.add, size: 18),
                   label: Text(
                     'New Article',
@@ -244,57 +302,98 @@ class _ProfileScreenState extends State<ProfileScreen> {
           
           // Articles List
           Expanded(
-            child: userArticles.isEmpty 
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.article_outlined,
-                        size: 64,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No articles yet',
-                        style: GoogleFonts.beVietnamPro(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[600],
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _hasError
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.error_outline,
+                              size: 64,
+                              color: Colors.red[400],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Failed to load articles',
+                              style: GoogleFonts.beVietnamPro(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.red[600],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _errorMessage,
+                              style: GoogleFonts.beVietnamPro(
+                                fontSize: 14,
+                                color: Colors.red[500],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _loadArticles,
+                              child: const Text('Retry'),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Start creating your first article',
-                        style: GoogleFonts.beVietnamPro(
-                          fontSize: 14,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton.icon(
-                        onPressed: _createNewArticle,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Create Article'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF207BF3),
-                          foregroundColor: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  itemCount: userArticles.length,
-                  itemBuilder: (context, index) {
-                    final article = userArticles[index];
-                    return ProfileArticleCard(
-                      article: article,
-                      onEdit: () => _editArticle(article),
-                      onDelete: () => _deleteArticle(article.id),
-                    );
-                  },
-                ),
+                      )
+                    : userArticles.isEmpty 
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.article_outlined,
+                                  size: 64,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No articles yet',
+                                  style: GoogleFonts.beVietnamPro(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Start creating your first article',
+                                  style: GoogleFonts.beVietnamPro(
+                                    fontSize: 14,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: _navigateToCreateArticle,
+                                  icon: const Icon(Icons.add),
+                                  label: const Text('Create Article'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF207BF3),
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _loadArticles,
+                            child: ListView.builder(
+                              itemCount: userArticles.length,
+                              itemBuilder: (context, index) {
+                                final article = userArticles[index];
+                                return ProfileArticleCard(
+                                  article: article,
+                                  onEdit: () => _navigateToEditArticle(article),
+                                  onDelete: () => _deleteArticle(article),
+                                );
+                              },
+                            ),
+                          ),
           ),
         ],
       ),
@@ -302,28 +401,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-class ArticleItem {
-  final String id;
-  final String imageUrl;
-  final String title;
-  final String description;
-  final String category;
-  final String publishDate;
-  final String status;
-
-  ArticleItem({
-    required this.id,
-    required this.imageUrl,
-    required this.title,
-    required this.description,
-    required this.category,
-    required this.publishDate,
-    required this.status,
-  });
-}
-
 class ProfileArticleCard extends StatelessWidget {
-  final ArticleItem article;
+  final NewsArticle article;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
@@ -447,7 +526,7 @@ class ProfileArticleCard extends StatelessWidget {
                     height: 96,
                     color: const Color(0xFFE2E8F0),
                     child: Image.network(
-                      article.imageUrl,
+                      article.featuredImageUrl,
                       width: 96,
                       height: 96,
                       fit: BoxFit.cover,
@@ -467,17 +546,17 @@ class ProfileArticleCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: article.status == 'Published' 
+                              color: article.isPublished 
                                   ? Colors.green[100] 
                                   : Colors.orange[100],
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              article.status,
+                              article.isPublished ? 'Published' : 'Draft',
                               style: GoogleFonts.beVietnamPro(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w500,
-                                color: article.status == 'Published' 
+                                color: article.isPublished 
                                     ? Colors.green[700] 
                                     : Colors.orange[700],
                               ),
@@ -485,7 +564,7 @@ class ProfileArticleCard extends StatelessWidget {
                           ),
                           const Spacer(),
                           Text(
-                            article.publishDate,
+                            article.publishedAt.split('T')[0], // Format date
                             style: GoogleFonts.beVietnamPro(
                               fontSize: 12,
                               color: const Color(0xFF64748B),
@@ -507,7 +586,7 @@ class ProfileArticleCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        article.description,
+                        article.summary,
                         style: GoogleFonts.beVietnamPro(
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
