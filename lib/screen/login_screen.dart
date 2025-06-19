@@ -1,8 +1,9 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:newspub/screen/home_screen.dart';
 import 'package:newspub/screen/register_screen.dart';
+
+import '../apiservice.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -101,8 +102,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         filled: true,
                         fillColor: Colors.grey[100],
                         suffixIcon: IconButton(
-                          onPressed: () =>
-                              setState(() => _showPassword = !_showPassword),
+                          onPressed:
+                              () => setState(
+                                () => _showPassword = !_showPassword,
+                              ),
                           icon: Icon(
                             _showPassword
                                 ? Icons.visibility
@@ -134,17 +137,39 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Login Button
                     ElevatedButton(
                       // Validasi username dan password
-                      onPressed: () {
+                      onPressed: () async {
                         if (_formKey.currentState!.validate()) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Login berhasil!')),
-                          );
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => NewsHomeScreen(),
-                            ),
-                          );
+                          try {
+                            final result = await loginUser(
+                              _emailController.text,
+                              _passwordController.text,
+                            );
+
+                            if (result['success']) {
+                              // Show success message
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(result['message'] ?? 'Login berhasil!')),
+                              );
+
+                              // Return to home screen with user data
+                              Navigator.pop(context, {
+                                'token': result['token'],
+                                'author': result['author'],
+                              });
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Login gagal: ${result['message']}',
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: ${e.toString()}')),
+                            );
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -179,15 +204,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: Color(0xFF197FE5),
                               fontWeight: FontWeight.w500,
                             ),
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => RegisterScreen(),
-                                  ),
-                                );
-                              },
+                            recognizer:
+                                TapGestureRecognizer()
+                                  ..onTap = () {
+                                    Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => RegisterScreen(),
+                                      ),
+                                    );
+                                  },
                           ),
                         ],
                       ),
