@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../apiservice.dart';
+import '../newsmodel.dart';
+
 void main() {
   runApp(const NewsApp());
 }
@@ -168,30 +171,7 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
 
   // Widget untuk section berita terbaru
   Widget _buildLatestNewsSection() {
-    final latestNews = [
-       {
-        "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuCT4VqXRNC_UTWJNnyyGcEtlI0k5eresCtNejmTYWVJUjYAeUQPlo-ZOV6nzEawd9TaGI46U8Mp9JJQAgno4ErMeu3yXhH03ZKI0UO_so6AgD8vFOzgvl6Cpe-IFo8cNQWwXDIetsoJ8ANyPOgP0Sf54_ivQ4C7xO58mn6omvedGonh-NPbTVQyN9l9vTUU9xoc-hUuV20WGq-y5ls1J6fdWqJjHuh9VC1DE4sD0UkCwPqDKabzgOB7F_Wnof53VXRg-bRN0j888Ko",
-        "category": "Politics",
-        "title": "Government Announces New Economic Plan",
-        "description": "The government has unveiled a comprehensive new economic plan aimed at stimulating growth...",
-        "color": Colors.blue[600]
-      },
-      {
-        "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuDc_BnRsDGTwvTc1oZbtJteGylYPbsw90LaJi529oOGUiNB6S5O7ZD93cBNNOW13gUQ3-KmFVmZRaWo_b48vHcyk9EdsAsuA4vdL-Ay898qII6xh80YxkymvfB7VoT-XyUSoG6R3W-27RoRRF-O0KnSOpay63u7DjWhuOH1_npVC_t53YwQ-cJUF9Ty80MnOwcdhaE_-JSj_t0gx5Yv6LzTfeqTPP_Jwnsy3UpA_R01lp989S8_0bix-qWqGvC10gg_8YmhRsqSETQ",
-        "category": "Technology",
-        "title": "New Smartphone Features Revealed",
-        "description": "A leading tech company has just revealed exciting new features for its upcoming smartphone...",
-        "color": Colors.purple[600]
-      },
-       {
-        "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuDAPoDipI5ensrxjeM6QU6V--ZoW2LEi06BjMJzcVVSiay1_ZAMJLrTpUyZ-WSBJsbURYmUGnR-q0wVIsaaR9XZb2HaGjIA4vS9KmlUSNwkQN0BoBtcp8Pi0S5bg6_i0kO4fMifwq1p-hYNI5hhik4XDT7l2fOf6m3TNRKaZ1ly37tZYxpjM6CsTAIrjEyWpsk-ZBkUZSDPc6PNuKOuJpm-E9ArQD1T2qJz9T5-AmauMCpOCMEk67V12u1T4DbDaxfMbJyIJ0XMkJc",
-        "category": "World",
-        "title": "International Trade Agreement Signed",
-        "description": "Multiple nations have signed a landmark international trade agreement...",
-        "color": Colors.orange[600]
-      },
-    ];
-    
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -206,19 +186,32 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          ListView.separated(
-            physics: const NeverScrollableScrollPhysics(), // Scroll di-handle oleh parent
-            shrinkWrap: true,
-            itemCount: latestNews.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final news = latestNews[index];
-              return LatestNewsCard(
-                imageUrl: news["image"] as String,
-                category: news["category"] as String,
-                title: news["title"] as String,
-                description: news["description"] as String,
-                categoryColor: news["color"] as Color,
+          FutureBuilder<List<NewsArticle>>(
+            future: fetchNewsArticles(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text('No news found.'));
+              }
+              final latestNews = snapshot.data!;
+              return ListView.separated(
+                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                itemCount: latestNews.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final news = latestNews[index];
+                  return LatestNewsCard(
+                    imageUrl: news.featuredImageUrl,
+                    category: news.category, // Or use news.category if available
+                    title: news.title,
+                    description: news.summary,
+                    categoryColor: Colors.blue[600]!, // Adjust as needed
+                  );
+                },
               );
             },
           ),
@@ -257,7 +250,7 @@ class FeaturedArticleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -281,7 +274,7 @@ class FeaturedArticleCard extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                    colors: [Colors.black.withValues(alpha: 0.8), Colors.transparent],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                   ),
@@ -365,7 +358,7 @@ class LatestNewsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
+      shadowColor: Colors.black.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
