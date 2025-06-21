@@ -39,6 +39,7 @@ dependencies:
   simple_circular_progress_bar: ^1.0.2
   news_api_flutter_package: ^1.2.0
   http: ^1.4.0
+  shared_preferences: ^2.5.3
 
 
 dev_dependencies:
