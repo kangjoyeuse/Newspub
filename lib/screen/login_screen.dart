@@ -148,7 +148,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (result['success']) {
                               // Show success message
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(result['message'] ?? 'Login berhasil!')),
+                                SnackBar(
+                                  content: Text(
+                                    result['message'] ?? 'Login berhasil!',
+                                  ),
+                                ),
                               );
 
                               // Return to home screen with user data

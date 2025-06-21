@@ -6,7 +6,6 @@ void main() {
   runApp(const MyApp());
 }
 
-// Data Model untuk setiap halaman onboarding
 class OnboardingItem {
   final String image;
   final String title;
@@ -28,7 +27,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'News App Onboarding',
       theme: ThemeData(
-        textTheme: GoogleFonts.beVietnamProTextTheme(Theme.of(context).textTheme),
+        textTheme: GoogleFonts.beVietnamProTextTheme(
+          Theme.of(context).textTheme,
+        ),
       ),
       home: const OnboardingScreen(),
     );
@@ -48,19 +49,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingItem> _onboardingData = [
     OnboardingItem(
-      image: 'https://i.imgur.com/4YU82t4.png',
+      image: 'https://i.imgur.com/h7tUhQ9.png',
       title: 'Berita Terkini & Terpercaya',
-      description: 'Dapatkan pembaruan instan dari sumber terverifikasi di seluruh dunia, langsung di ujung jari Anda.',
+      description:
+          'Dapatkan pembaruan instan dari sumber terverifikasi di seluruh dunia, langsung di ujung jari Anda.',
     ),
     OnboardingItem(
-      image: 'https://i.imgur.com/k7ENYmD.png',
+      image: 'https://i.imgur.com/43IqKxw.jpeg',
       title: 'Kategori Sesuai Minat',
-      description: 'Pilih topik yang Anda sukai, mulai dari teknologi, olahraga, hingga politik, dan kami akan menyajikannya untuk Anda.',
+      description:
+          'Pilih topik yang Anda sukai, mulai dari teknologi, olahraga, hingga politik, dan kami akan menyajikannya untuk Anda.',
     ),
     OnboardingItem(
-      image: 'https://i.imgur.com/YJzTwHS.png',
+      image: 'https://i.imgur.com/OAXvwiL.jpeg',
       title: 'Simpan & Baca Nanti',
-      description: 'Jangan lewatkan artikel menarik. Simpan berita untuk dibaca nanti, bahkan saat Anda sedang offline.',
+      description:
+          'Jangan lewatkan artikel menarik. Simpan berita untuk dibaca nanti, bahkan saat Anda sedang offline.',
     ),
   ];
 
@@ -83,22 +87,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ## Tombol Lewati (Skip) ##
             Align(
               alignment: Alignment.topRight,
               child: TextButton(
                 onPressed: _navigateToHome,
                 child: const Text(
                   'Lewati',
-                  style: TextStyle(
-                    color: Color(0xFF475569),
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Color(0xFF475569), fontSize: 14),
                 ),
               ),
             ),
-
-            // ## Konten Slide (PageView) ##
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -113,10 +111,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
             ),
-            
-            // REVISI: Indikator titik-titik sekarang berada di sini, di bawah PageView
             Padding(
-              padding: const EdgeInsets.only(bottom: 50.0), // Memberi jarak ke tombol di bawah
+              padding: const EdgeInsets.only(bottom: 50.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
@@ -128,8 +124,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
             ),
-
-            // REVISI: Footer sekarang hanya berisi tombol navigasi
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
               child: Align(
@@ -153,7 +147,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                     ),
                     child: Text(
                       _currentPageIndex < _onboardingData.length - 1
@@ -167,7 +164,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -175,7 +172,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-// Widget untuk menampilkan konten satu halaman onboarding
 class OnboardingPage extends StatelessWidget {
   final OnboardingItem item;
 
@@ -219,7 +215,6 @@ class OnboardingPage extends StatelessWidget {
   }
 }
 
-// Widget untuk indikator titik
 class PageIndicator extends StatelessWidget {
   final bool isActive;
   const PageIndicator({super.key, required this.isActive});
