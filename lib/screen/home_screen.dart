@@ -17,6 +17,24 @@ class NewsHomeScreen extends StatefulWidget {
 class _NewsHomeScreenState extends State<NewsHomeScreen> {
   int _selectedIndex = 0;
   Map<String, dynamic>? userData;
+  List<String> bookmarkedIds = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookmarkedIds();
+  }
+
+  Future<void> _loadBookmarkedIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> existing = prefs.getStringList('bookmarks') ?? [];
+    setState(() {
+      bookmarkedIds = existing.map((encoded) {
+        final data = jsonDecode(encoded);
+        return data['id'] ?? '';
+      }).where((id) => id.isNotEmpty).toList().cast<String>();
+    });
+  }
 
   void showLoginPrompt() {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -38,28 +56,45 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
     );
   }
 
-  Future<void> addToBookmark(NewsArticle article) async {
+  Future<void> toggleBookmark(NewsArticle article) async {
     final prefs = await SharedPreferences.getInstance();
     final List<String> existing = prefs.getStringList('bookmarks') ?? [];
 
     final encoded = jsonEncode({
+      'id': article.id,
       'imageUrl': article.featuredImageUrl,
       'title': article.title,
       'description': article.summary,
       'category': article.category,
     });
 
-    if (!existing.contains(encoded)) {
+    final isBookmarked = existing.any((item) {
+      final data = jsonDecode(item);
+      return data['id'] == article.id;
+    });
+
+    if (isBookmarked) {
+      existing.removeWhere((item) {
+        final data = jsonDecode(item);
+        return data['id'] == article.id;
+      });
+      setState(() {
+        bookmarkedIds.remove(article.id);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Artikel dihapus dari bookmark')),
+      );
+    } else {
       existing.add(encoded);
-      await prefs.setStringList('bookmarks', existing);
+      setState(() {
+        bookmarkedIds.add(article.id);
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Artikel ditambahkan ke bookmark')),
       );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Artikel sudah ada di bookmark')),
-      );
     }
+
+    await prefs.setStringList('bookmarks', existing);
   }
 
   @override
@@ -86,57 +121,57 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
         actions: [
           userData == null
               ? TextButton.icon(
-                icon: const Icon(Icons.login, color: Color(0xFF3B82F6)),
-                label: const Text(
-                  'Login',
-                  style: TextStyle(
-                    color: Color(0xFF3B82F6),
-                    fontWeight: FontWeight.w600,
+            icon: const Icon(Icons.login, color: Color(0xFF3B82F6)),
+            label: const Text(
+              'Login',
+              style: TextStyle(
+                color: Color(0xFF3B82F6),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(),
+                ),
+              );
+              if (result != null && result is Map<String, dynamic>) {
+                setState(() => userData = result);
+              }
+            },
+          )
+              : Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundImage:
+                  userData!['author']['avatarUrl'] != null
+                      ? NetworkImage(userData!['author']['avatarUrl'])
+                      : null,
+                  backgroundColor: Colors.blue,
+                  child:
+                  userData!['author']['avatarUrl'] == null
+                      ? Text(
+                    userData!['author']['firstName'][0],
+                    style: const TextStyle(color: Colors.white),
+                  )
+                      : null,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${userData!['author']['firstName']} ${userData!['author']['lastName']}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF475569),
                   ),
                 ),
-                onPressed: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
-                    ),
-                  );
-                  if (result != null && result is Map<String, dynamic>) {
-                    setState(() => userData = result);
-                  }
-                },
-              )
-              : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundImage:
-                          userData!['author']['avatarUrl'] != null
-                              ? NetworkImage(userData!['author']['avatarUrl'])
-                              : null,
-                      backgroundColor: Colors.blue,
-                      child:
-                          userData!['author']['avatarUrl'] == null
-                              ? Text(
-                                userData!['author']['firstName'][0],
-                                style: const TextStyle(color: Colors.white),
-                              )
-                              : null,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${userData!['author']['firstName']} ${userData!['author']['lastName']}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF475569),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              ],
+            ),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -167,11 +202,10 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
                     child: Row(
                       children: List.generate(
                         latestNews.length >= 3 ? 3 : latestNews.length,
-                        (index) => TopNewsCard(
-                          imageUrl: latestNews[index].featuredImageUrl,
-                          category: latestNews[index].category,
-                          title: latestNews[index].title,
-                          description: latestNews[index].summary,
+                            (index) => TopNewsCard(
+                          article: latestNews[index],
+                          isBookmarked: bookmarkedIds.contains(latestNews[index].id),
+                          onBookmarkToggle: () => toggleBookmark(latestNews[index]),
                         ),
                       ),
                     ),
@@ -189,15 +223,10 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
                     separatorBuilder: (_, __) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final news = latestNews[index];
-                      return GestureDetector(
-                        onTap: () => addToBookmark(news),
-                        child: LatestNewsCard(
-                          imageUrl: news.featuredImageUrl,
-                          category: news.category,
-                          title: news.title,
-                          description: news.summary,
-                          categoryColor: Colors.blue,
-                        ),
+                      return LatestNewsCard(
+                        article: news,
+                        isBookmarked: bookmarkedIds.contains(news.id),
+                        onBookmarkToggle: () => toggleBookmark(news),
                       );
                     },
                   ),
@@ -228,7 +257,10 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
               MaterialPageRoute(
                 builder: (_) => const BookmarkScreen(localBookmarks: []),
               ),
-            );
+            ).then((_) {
+              // Refresh bookmark state after returning from BookmarkScreen
+              _loadBookmarkedIds();
+            });
           } else if (index == 2 && userData != null) {
             Navigator.push(
               context,
@@ -252,21 +284,17 @@ class _NewsHomeScreenState extends State<NewsHomeScreen> {
   }
 }
 
-// Kartu vertikal utama
+// Kartu vertikal utama dengan icon bookmark
 class LatestNewsCard extends StatelessWidget {
-  final String imageUrl;
-  final String category;
-  final String title;
-  final String description;
-  final Color categoryColor;
+  final NewsArticle article;
+  final bool isBookmarked;
+  final VoidCallback onBookmarkToggle;
 
   const LatestNewsCard({
     super.key,
-    required this.imageUrl,
-    required this.category,
-    required this.title,
-    required this.description,
-    required this.categoryColor,
+    required this.article,
+    required this.isBookmarked,
+    required this.onBookmarkToggle,
   });
 
   @override
@@ -281,13 +309,13 @@ class LatestNewsCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                imageUrl,
+                article.featuredImageUrl,
                 width: 96,
                 height: 96,
                 fit: BoxFit.cover,
                 errorBuilder:
                     (_, __, ___) =>
-                        const Icon(Icons.image_not_supported, size: 48),
+                const Icon(Icons.image_not_supported, size: 48),
               ),
             ),
             const SizedBox(width: 12),
@@ -295,13 +323,29 @@ class LatestNewsCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    category,
-                    style: TextStyle(color: categoryColor, fontSize: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        article.category,
+                        style: const TextStyle(color: Colors.blue, fontSize: 12),
+                      ),
+                      GestureDetector(
+                        onTap: onBookmarkToggle,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                            color: isBookmarked ? Colors.blue : Colors.grey,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    title,
+                    article.title,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -309,7 +353,7 @@ class LatestNewsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    description,
+                    article.summary,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -323,19 +367,17 @@ class LatestNewsCard extends StatelessWidget {
   }
 }
 
-// Kartu horizontal Top News
+// Kartu horizontal Top News dengan icon bookmark
 class TopNewsCard extends StatelessWidget {
-  final String imageUrl;
-  final String category;
-  final String title;
-  final String description;
+  final NewsArticle article;
+  final bool isBookmarked;
+  final VoidCallback onBookmarkToggle;
 
   const TopNewsCard({
     super.key,
-    required this.imageUrl,
-    required this.category,
-    required this.title,
-    required this.description,
+    required this.article,
+    required this.isBookmarked,
+    required this.onBookmarkToggle,
   });
 
   @override
@@ -349,13 +391,13 @@ class TopNewsCard extends StatelessWidget {
         child: Stack(
           children: [
             Image.network(
-              imageUrl,
+              article.featuredImageUrl,
               width: double.infinity,
               height: double.infinity,
               fit: BoxFit.cover,
               errorBuilder:
                   (_, __, ___) =>
-                      const Icon(Icons.image_not_supported, size: 48),
+              const Icon(Icons.image_not_supported, size: 48),
             ),
             Container(
               decoration: BoxDecoration(
@@ -363,6 +405,25 @@ class TopNewsCard extends StatelessWidget {
                   colors: [Colors.black.withOpacity(0.6), Colors.transparent],
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: onBookmarkToggle,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Icon(
+                    isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                    color: isBookmarked ? Colors.yellow : Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
@@ -382,7 +443,7 @@ class TopNewsCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      category,
+                      article.category,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -392,7 +453,7 @@ class TopNewsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    title,
+                    article.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -403,7 +464,7 @@ class TopNewsCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    description,
+                    article.summary,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: Colors.white70, fontSize: 12),

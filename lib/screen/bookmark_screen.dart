@@ -34,18 +34,26 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
     });
   }
 
-  Future<void> removeBookmark(int index) async {
+  Future<void> removeBookmark(String articleId) async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList('bookmarks') ?? [];
-    final item = jsonEncode(bookmarkedArticles[index].toJson());
-    list.remove(item);
-    await prefs.setStringList('bookmarks', list);
-    setState(() {
-      bookmarkedArticles.removeAt(index);
+
+    // Remove bookmark by matching the article ID
+    list.removeWhere((item) {
+      final data = jsonDecode(item);
+      return data['id'] == articleId;
     });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Removed from bookmarks')));
+
+    await prefs.setStringList('bookmarks', list);
+
+    // Update local state
+    setState(() {
+      bookmarkedArticles.removeWhere((article) => article.id == articleId);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Removed from bookmarks'))
+    );
   }
 
   @override
@@ -69,63 +77,63 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
         ),
         centerTitle: true,
       ),
-      body:
-          bookmarkedArticles.isEmpty
-              ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.bookmark_border,
-                      size: 64,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No bookmarks yet',
-                      style: GoogleFonts.beVietnamPro(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Start bookmarking articles to see them here',
-                      style: GoogleFonts.beVietnamPro(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              )
-              : ListView.separated(
-                padding: const EdgeInsets.only(top: 12, bottom: 24),
-                itemCount: bookmarkedArticles.length,
-                separatorBuilder:
-                    (_, __) =>
-                        const Divider(height: 0, color: Color(0xFFF1F5F9)),
-                itemBuilder: (context, index) {
-                  final article = bookmarkedArticles[index];
-                  return BookmarkCard(
-                    article: article,
-                    onRemoveBookmark: () => removeBookmark(index),
-                  );
-                },
+      body: bookmarkedArticles.isEmpty
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.bookmark_border,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No bookmarks yet',
+              style: GoogleFonts.beVietnamPro(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
               ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Start bookmarking articles to see them here',
+              style: GoogleFonts.beVietnamPro(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      )
+          : ListView.separated(
+        padding: const EdgeInsets.only(top: 12, bottom: 24),
+        itemCount: bookmarkedArticles.length,
+        separatorBuilder: (_, __) =>
+        const Divider(height: 0, color: Color(0xFFF1F5F9)),
+        itemBuilder: (context, index) {
+          final article = bookmarkedArticles[index];
+          return BookmarkCard(
+            article: article,
+            onRemoveBookmark: () => removeBookmark(article.id),
+          );
+        },
+      ),
     );
   }
 }
 
-// Model bookmark
+// Updated BookmarkItem model to include ID
 class BookmarkItem {
+  final String id;
   final String imageUrl;
   final String title;
   final String description;
   final String category;
 
   BookmarkItem({
+    required this.id,
     required this.imageUrl,
     required this.title,
     required this.description,
@@ -133,6 +141,7 @@ class BookmarkItem {
   });
 
   Map<String, dynamic> toJson() => {
+    'id': id,
     'imageUrl': imageUrl,
     'title': title,
     'description': description,
@@ -140,10 +149,11 @@ class BookmarkItem {
   };
 
   factory BookmarkItem.fromJson(Map<String, dynamic> json) => BookmarkItem(
-    imageUrl: json['imageUrl'],
-    title: json['title'],
-    description: json['description'],
-    category: json['category'],
+    id: json['id'] ?? '',
+    imageUrl: json['imageUrl'] ?? '',
+    title: json['title'] ?? '',
+    description: json['description'] ?? '',
+    category: json['category'] ?? '',
   );
 }
 
@@ -177,9 +187,8 @@ class BookmarkCard extends StatelessWidget {
                 width: 72,
                 height: 72,
                 fit: BoxFit.cover,
-                errorBuilder:
-                    (context, error, stackTrace) =>
-                        const Icon(Icons.image_not_supported, size: 40),
+                errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.image_not_supported, size: 40),
               ),
             ),
           ),
