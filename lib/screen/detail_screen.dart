@@ -17,64 +17,6 @@ class DetailScreen extends StatefulWidget {
 }
 
 class _DetailScreenState extends State<DetailScreen> {
-  bool isBookmarked = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkBookmarkStatus();
-  }
-
-  Future<void> _checkBookmarkStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> existing = prefs.getStringList('bookmarks') ?? [];
-    
-    final bookmarked = existing.any((item) {
-      final data = jsonDecode(item);
-      return data['id'] == widget.article.id;
-    });
-
-    setState(() {
-      isBookmarked = bookmarked;
-    });
-  }
-
-  Future<void> _toggleBookmark() async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> existing = prefs.getStringList('bookmarks') ?? [];
-
-    final encoded = jsonEncode({
-      'id': widget.article.id,
-      'imageUrl': widget.article.featuredImageUrl,
-      'title': widget.article.title,
-      'description': widget.article.summary,
-      'category': widget.article.category,
-    });
-
-    if (isBookmarked) {
-      existing.removeWhere((item) {
-        final data = jsonDecode(item);
-        return data['id'] == widget.article.id;
-      });
-      setState(() {
-        isBookmarked = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Artikel dihapus dari bookmark')),
-      );
-    } else {
-      existing.add(encoded);
-      setState(() {
-        isBookmarked = true;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Artikel ditambahkan ke bookmark')),
-      );
-    }
-
-    await prefs.setStringList('bookmarks', existing);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,22 +39,6 @@ class _DetailScreenState extends State<DetailScreen> {
                 onPressed: () => Navigator.pop(context),
               ),
             ),
-            actions: [
-              Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: IconButton(
-                  icon: Icon(
-                    isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                    color: isBookmarked ? Colors.yellow : Colors.white,
-                  ),
-                  onPressed: _toggleBookmark,
-                ),
-              ),
-            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
