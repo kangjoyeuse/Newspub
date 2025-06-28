@@ -75,6 +75,8 @@ class _ArticleFormScreenState extends State<ArticleFormScreen> {
       final tags = _parseTags();
       Map<String, dynamic> result;
 
+      final imageUrl = _imageUrlController.text.trim().isEmpty ? "https://" : _imageUrlController.text.trim();
+
       if (widget.article == null) {
         // Create new article
         result = await createArticle(
@@ -82,7 +84,7 @@ class _ArticleFormScreenState extends State<ArticleFormScreen> {
           title: _titleController.text.trim(),
           summary: _summaryController.text.trim(),
           content: _contentController.text.trim(),
-          featuredImageUrl: _imageUrlController.text.trim(),
+          featuredImageUrl: imageUrl,
           category: _categoryController.text.trim(), // Use text field value
           tags: tags,
           isPublished: _isPublished,
