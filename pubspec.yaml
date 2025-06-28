@@ -40,7 +40,11 @@ dependencies:
   news_api_flutter_package: ^1.2.0
   http: ^1.4.0
   shared_preferences: ^2.5.3
+  flutter_launcher_icons: ^0.14.4
 
+flutter_launcher_icons:
+  android: "launcher_icon"
+  image_path: "assets/icon/news.png"
 
 dev_dependencies:
   flutter_test:
