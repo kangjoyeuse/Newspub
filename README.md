@@ -1,16 +1,29 @@
-# newspub
+# Newspub
 
-A new Flutter project.
+Aplikasi berita sederhana berbasis mobile yang mengambil dan menampilkan data berita dari API. User dapat membaca berita dan menambahkan salah satu berita ke daftar favorit.
 
-## Getting Started
+Fitur:
+- Membaca berita
+- Menambahkan bookmark
+- CRUD berita
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Untuk menjalankan aplikasi secara lokal:
+1. Clone Repository
+```bash
+git clone https://github.com/kangjoyeuse/Newspub.git
+```
+3. Masuk ke direktori projek
+```bash
+cd Newspub
+```
+4. Install depedensi
+```bash
+flutter pub get
+```
+6. Jalankan aplikasi
+```bash
+flutter run
+```
+<img height="200" alt="image" src="https://github.com/user-attachments/assets/2e4ba46a-0a85-417b-b4cf-922765da0b74" />
+<img height="200" alt="image" src="https://github.com/user-attachments/assets/8dc28b6a-1ca8-41cf-acab-1b2db4ee6966" />
+<img height="200" alt="image" src="https://github.com/user-attachments/assets/455694f5-7f5d-4315-8be7-10d423398c6f" />
